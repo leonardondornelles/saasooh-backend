@@ -1,14 +1,27 @@
 package com.neuralFlux.Saas_OOH_demo.services;
 
 import com.neuralFlux.Saas_OOH_demo.dtos.PanelRequestDTO;
+import com.neuralFlux.Saas_OOH_demo.dtos.details.CampaignSnippetDTO;
+import com.neuralFlux.Saas_OOH_demo.dtos.details.FaceDetailDTO;
+import com.neuralFlux.Saas_OOH_demo.dtos.details.PanelDetailsDTO;
+import com.neuralFlux.Saas_OOH_demo.enums.FaceStatus;
+import com.neuralFlux.Saas_OOH_demo.enums.StatusCampaign;
+import com.neuralFlux.Saas_OOH_demo.models.Campaign;
 import com.neuralFlux.Saas_OOH_demo.models.Company;
+import com.neuralFlux.Saas_OOH_demo.models.Face;
 import com.neuralFlux.Saas_OOH_demo.models.Panel;
+import com.neuralFlux.Saas_OOH_demo.repositories.CampaignRepository;
 import com.neuralFlux.Saas_OOH_demo.repositories.CompanyRepository;
+import com.neuralFlux.Saas_OOH_demo.repositories.FaceRepository;
 import com.neuralFlux.Saas_OOH_demo.repositories.PanelRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -16,6 +29,8 @@ public class PanelService {
 
     private final PanelRepository panelRepository;
     private final CompanyRepository companyRepository;
+    private final FaceRepository faceRepository;
+    private final CampaignRepository campaignRepository;
 
     public Panel createPanel(Long companyId, PanelRequestDTO dto){
 
@@ -48,5 +63,76 @@ public class PanelService {
         }
 
         panelRepository.delete(panel);
+    }
+
+    public PanelDetailsDTO getPanelDetails(Long panelId, Long companyId) {
+        Panel panel = panelRepository.findById(panelId)
+                .orElseThrow(() -> new RuntimeException("Painel não encontrado"));
+
+        if (!panel.getCompany().getId().equals(companyId)) {
+            throw new RuntimeException("Acesso negado");
+        }
+
+        List<Face> faces = faceRepository.findByPanel_Id(panelId);
+
+        DateTimeFormatter formatterBR = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        LocalDate today = LocalDate.now();
+
+        List<FaceDetailDTO> facesDTO = faces.stream().map(face -> {
+
+            Optional<Campaign> campaign = campaignRepository.findFirstByFaceIdAndStatusIn(face.getId(), List.of(StatusCampaign.ACTIVE, StatusCampaign.RESERVED));
+
+            if (campaign.isPresent()){
+                Campaign c = campaign.get();
+
+                FaceStatus statusFace;
+                if(today.isBefore(c.getStartDate())) {
+                    statusFace = FaceStatus.RESERVADO;
+                } else {
+                    statusFace = FaceStatus.OCUPADO;
+
+                }
+
+                long daysRemaining = ChronoUnit.DAYS.between(c.getStartDate(), c.getEndDate());
+                long daysTotal = ChronoUnit.DAYS.between(c.getStartDate(), c.getEndDate());
+
+                CampaignSnippetDTO snippetDTO = new CampaignSnippetDTO(
+                        c.getCustomer().getFantasyName(),
+                        c.getStartDate().format(formatterBR),
+                        c.getEndDate().format(formatterBR),
+                        Math.max(0, (int) daysRemaining),
+                        (int) daysTotal,
+                        "R$ " + c.getMonthlyValue()
+                );
+
+                return new FaceDetailDTO(
+                        face.getId(),
+                        face.getName(),
+                        face.getFormat(),
+                        statusFace,
+                        true,
+                        snippetDTO
+                );
+            } else {
+                return new FaceDetailDTO(
+                        face.getId(),
+                        face.getName(),
+                        face.getFormat(),
+                        FaceStatus.LIVRE,
+                        true,
+                        null
+                );
+            }
+        }).toList();
+
+        return new PanelDetailsDTO(
+                "OUT-" + panel.getId(),
+                panel.getType().name(),
+                panel.getAddress(),
+                panel.getCity(),
+                panel.getLatitude(),
+                panel.getLongitude(),
+                facesDTO
+        );
     }
 }

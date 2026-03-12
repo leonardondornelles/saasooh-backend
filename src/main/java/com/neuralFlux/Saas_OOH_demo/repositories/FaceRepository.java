@@ -10,4 +10,6 @@ import java.util.List;
 public interface FaceRepository extends JpaRepository<Face, Long> {
 
     List<Face> findByPanel_Id(Long id);
+
 }
+

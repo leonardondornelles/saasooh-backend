@@ -1,9 +1,12 @@
 package com.neuralFlux.Saas_OOH_demo.controllers;
 
 
+import com.neuralFlux.Saas_OOH_demo.dtos.PanelRequestDTO;
 import com.neuralFlux.Saas_OOH_demo.dtos.PanelResponseDTO;
 import com.neuralFlux.Saas_OOH_demo.models.Company;
 import com.neuralFlux.Saas_OOH_demo.models.Panel;
+import com.neuralFlux.Saas_OOH_demo.security.SecurityConfig;
+import com.neuralFlux.Saas_OOH_demo.security.UserDetailsImpl;
 import com.neuralFlux.Saas_OOH_demo.services.PanelService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,19 +27,43 @@ public class PanelController {
 
     private final PanelService panelService;
 
-    @PostMapping("/companies/{companyId}")
-    public ResponseEntity<PanelResponseDTO> save(@PathVariable Long companyId, @Valid @RequestBody Panel panel) {
-        Panel savedPanel = panelService.createPanel(companyId, panel);
+    @PostMapping
+    public ResponseEntity<PanelResponseDTO> save(@RequestBody PanelRequestDTO dto) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        UserDetailsImpl userDetails = (UserDetailsImpl) auth.getPrincipal();
+
+        Long companyId = userDetails.getUser().getCompany().getId();
+
+        Panel savedPanel = panelService.createPanel(companyId, dto);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(new PanelResponseDTO(savedPanel));
     }
 
     @GetMapping
     public ResponseEntity<List<PanelResponseDTO>> listAll(){
 
-        List<PanelResponseDTO> dtos = panelService.getAllPanels().stream()
-                .map(PanelResponseDTO::new)
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        UserDetailsImpl userDetails = (UserDetailsImpl) auth.getPrincipal();
+
+        Long companyId = userDetails.getUser().getCompany().getId();
+
+        List<PanelResponseDTO> dtos = panelService.getPanelByCompanyId(companyId)
+                .stream().map(PanelResponseDTO::new)
                 .toList();
 
         return ResponseEntity.ok(dtos);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable Long id){
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) auth.getPrincipal();
+        Long companyId = userDetails.getUser().getCompany().getId();
+
+        panelService.deletePanel(id, companyId);
+
+        return ResponseEntity.noContent().build();
     }
 }

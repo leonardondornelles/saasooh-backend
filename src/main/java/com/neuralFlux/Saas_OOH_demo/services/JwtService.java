@@ -31,14 +31,17 @@ public class JwtService {
         if(user.getCustomer() != null){
             claims.put("customerId", user.getCustomer().getId());
         }
-
-        return Jwts.builder()
+        String token = Jwts.builder()
                 .setClaims(claims)
                 .setSubject(user.getEmail())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24)) // 24 horas de validade
                 .signWith(getKey(), SignatureAlgorithm.HS256)
                 .compact();
+
+        System.out.println("TOKEN GERADO: " + token);
+
+        return token;
     }
 
     private Key getKey() {

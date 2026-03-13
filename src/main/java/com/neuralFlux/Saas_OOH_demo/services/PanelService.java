@@ -44,10 +44,23 @@ public class PanelService {
         panel.setLatitude(dto.latitude());
         panel.setLongitude(dto.longitude());
         panel.setType(dto.panelType());
-        String codigoGerado = java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        panel.setIdentificationCode(codigoGerado);
+        panel.setIdentificationCode(java.util.UUID.randomUUID().toString().substring(0, 8).toUpperCase());
 
-        return panelRepository.save(panel);
+        Panel savedPanel = panelRepository.save(panel);
+
+        int quantityFaces = savedPanel.getType().getMaxFaces();
+        char faceChar = 'A';
+
+        for(int i = 0; i < quantityFaces; i++){
+            Face face = new Face();
+            face.setPanel(savedPanel);
+            face.setName("Face " + (char) (faceChar + i));
+            face.setFormat("Padrão");
+            face.setActive(true);
+
+            faceRepository.save(face);
+        }
+        return savedPanel;
     }
 
     public List<Panel> getPanelByCompanyId(Long companyId){

@@ -3,6 +3,7 @@ package com.neuralFlux.Saas_OOH_demo.controllers;
 
 import com.neuralFlux.Saas_OOH_demo.dtos.PanelRequestDTO;
 import com.neuralFlux.Saas_OOH_demo.dtos.PanelResponseDTO;
+import com.neuralFlux.Saas_OOH_demo.dtos.details.PanelDetailsDTO;
 import com.neuralFlux.Saas_OOH_demo.models.Company;
 import com.neuralFlux.Saas_OOH_demo.models.Panel;
 import com.neuralFlux.Saas_OOH_demo.security.SecurityConfig;
@@ -54,6 +55,17 @@ public class PanelController {
                 .toList();
 
         return ResponseEntity.ok(dtos);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<PanelDetailsDTO> getPanelById(@PathVariable Long id) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) auth.getPrincipal();
+        Long companyId = userDetails.getUser().getCompany().getId();
+
+        PanelDetailsDTO panelDetails = panelService.getPanelDetails(id, companyId);
+
+        return ResponseEntity.ok(panelDetails);
     }
 
     @DeleteMapping("/{id}")

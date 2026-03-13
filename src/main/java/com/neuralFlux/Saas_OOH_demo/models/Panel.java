@@ -17,7 +17,7 @@ public class Panel {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @OneToMany(mappedBy = "panel", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "panel", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Face> faces;
 
     @ManyToOne

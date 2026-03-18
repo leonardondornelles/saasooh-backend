@@ -8,6 +8,9 @@ import com.neuralFlux.Saas_OOH_demo.repositories.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class CampaignService {
@@ -22,7 +25,12 @@ public class CampaignService {
         if(dto.endDate().isBefore(dto.startDate()))
             throw new IllegalArgumentException("A data de término não pode ser anterior à data de início.");
 
-        long overlaps = campaignRepository.countOverlappingCampaigns(dto.faceId(), dto.startDate(), dto.endDate());
+        long overlaps = campaignRepository.countOverlappingCampaigns(
+                dto.faceId(),
+                dto.startDate(),
+                dto.endDate(),
+                List.of(StatusCampaign.ACTIVE, StatusCampaign.RESERVED)
+            );
 
         if(overlaps > 0)
             throw new IllegalArgumentException("Overbooking: Esta Face já está reservada ou ativa para este período");
@@ -48,6 +56,13 @@ public class CampaignService {
         campaign.setStatus(StatusCampaign.RESERVED);
         campaign.setExecutive(executive);
         campaign.setCompany(company);
+
+        LocalDate today = LocalDate.now();
+        if (dto.startDate().isAfter(today)){
+            campaign.setStatus(StatusCampaign.RESERVED);
+        } else {
+            campaign.setStatus(StatusCampaign.ACTIVE);
+        }
 
         return campaignRepository.save(campaign);
     }

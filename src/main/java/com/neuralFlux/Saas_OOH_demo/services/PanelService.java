@@ -93,49 +93,50 @@ public class PanelService {
 
         List<FaceDetailDTO> facesDTO = faces.stream().map(face -> {
 
-            Optional<Campaign> campaign = campaignRepository.findFirstByFaceIdAndStatusIn(face.getId(), List.of(StatusCampaign.ACTIVE, StatusCampaign.RESERVED));
+            List<Campaign> campaigns = campaignRepository.findAllByFaceIdAndStatusIn(
+                    face.getId(),
+                    List.of(StatusCampaign.ACTIVE, StatusCampaign.RESERVED)
+            );
 
-            if (campaign.isPresent()){
-                Campaign c = campaign.get();
+            List<CampaignSnippetDTO> snippets = campaigns.stream().map(c -> {
+                long diasRestantes = ChronoUnit.DAYS.between(today, c.getEndDate());
+                long totalDias = ChronoUnit.DAYS.between(c.getStartDate(), c.getEndDate());
 
-                FaceStatus statusFace;
-                if(today.isBefore(c.getStartDate())) {
-                    statusFace = FaceStatus.RESERVADO;
-                } else {
-                    statusFace = FaceStatus.OCUPADO;
-
-                }
-
-                long daysRemaining = ChronoUnit.DAYS.between(c.getStartDate(), c.getEndDate());
-                long daysTotal = ChronoUnit.DAYS.between(c.getStartDate(), c.getEndDate());
-
-                CampaignSnippetDTO snippetDTO = new CampaignSnippetDTO(
+                return new CampaignSnippetDTO(
                         c.getCustomer().getFantasyName(),
                         c.getStartDate().format(formatterBR),
                         c.getEndDate().format(formatterBR),
-                        Math.max(0, (int) daysRemaining),
-                        (int) daysTotal,
+                        Math.max(0, (int) diasRestantes),
+                        (int) totalDias,
                         "R$ " + c.getMonthlyValue()
                 );
+            }).toList();
 
-                return new FaceDetailDTO(
-                        face.getId(),
-                        face.getName(),
-                        face.getFormat(),
-                        statusFace,
-                        true,
-                        snippetDTO
-                );
-            } else {
-                return new FaceDetailDTO(
-                        face.getId(),
-                        face.getName(),
-                        face.getFormat(),
-                        FaceStatus.LIVRE,
-                        true,
-                        null
-                );
+            FaceStatus activeStatus = FaceStatus.LIVRE;
+            boolean hasFutureCampaign = false;
+
+            for (Campaign c : campaigns) {
+                if (!today.isBefore(c.getStartDate()) && !today.isAfter(c.getEndDate())) {
+                    activeStatus = FaceStatus.OCUPADO;
+                    break;
+                }
+                else if(c.getStartDate().isAfter(today)){
+                    hasFutureCampaign = true;
+                }
             }
+
+            if (activeStatus == FaceStatus.LIVRE && !campaigns.isEmpty()) {
+                activeStatus = FaceStatus.RESERVADO;
+            }
+
+            return new FaceDetailDTO(
+                    face.getId(),
+                    face.getName(),
+                    face.getFormat(),
+                    activeStatus,
+                    true,
+                    snippets
+            );
         }).toList();
 
         return new PanelDetailsDTO(

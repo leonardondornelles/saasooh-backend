@@ -21,7 +21,7 @@ public class CampaignService {
     private final UserRepository userRepository;
     private final CompanyRepository companyRepository;
 
-    public Campaign createCampaign(CampaignRequestDTO dto){
+    public Campaign createCampaign(CampaignRequestDTO dto, Long executiveId, Long companyId){
         if(dto.endDate().isBefore(dto.startDate()))
             throw new IllegalArgumentException("A data de término não pode ser anterior à data de início.");
 
@@ -41,10 +41,10 @@ public class CampaignService {
         Face face = faceRepository.findById(dto.faceId())
                 .orElseThrow(() -> new IllegalArgumentException("Face não encontrada"));
 
-        User executive = userRepository.findById(dto.executiveId())
+        User executive = userRepository.findById(executiveId)
                 .orElseThrow(() -> new ResourceNotFoundException("Executivo não encontrado"));
 
-        Company company = companyRepository.findById(dto.companyId())
+        Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Empresa não foi encontrada"));
 
         Campaign campaign = new Campaign();

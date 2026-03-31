@@ -2,8 +2,10 @@ package com.neuralFlux.Saas_OOH_demo.controllers;
 
 import com.neuralFlux.Saas_OOH_demo.dtos.loginDTO.LoginRequestDTO;
 import com.neuralFlux.Saas_OOH_demo.dtos.loginDTO.LoginResponseDTO;
+import com.neuralFlux.Saas_OOH_demo.dtos.loginDTO.TenantRegistrationDTO;
 import com.neuralFlux.Saas_OOH_demo.security.UserDetailsImpl;
 import com.neuralFlux.Saas_OOH_demo.services.JwtService;
+import com.neuralFlux.Saas_OOH_demo.services.TenantRegistrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +24,7 @@ public class AuthController {
 
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final TenantRegistrationService registrationService;
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO loginRequest){
@@ -35,5 +38,11 @@ public class AuthController {
         String token = jwtService.generateToken(userDetails.getUser());
 
         return ResponseEntity.ok(new LoginResponseDTO(token));
+    }
+
+    @PostMapping("/register")
+    public ResponseEntity<String> registerTenant(@RequestBody TenantRegistrationDTO dto){
+        registrationService.registerNewTenant(dto);
+        return ResponseEntity.status(201).body("Conta Saas criada com sucesso! Faça login para continuar");
     }
 }

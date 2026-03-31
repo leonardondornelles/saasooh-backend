@@ -1,5 +1,6 @@
 package com.neuralFlux.Saas_OOH_demo.services;
 
+import com.neuralFlux.Saas_OOH_demo.dtos.EmployeeRequestDTO;
 import com.neuralFlux.Saas_OOH_demo.dtos.UserRequestDTO;
 import com.neuralFlux.Saas_OOH_demo.enums.RoleUser;
 import com.neuralFlux.Saas_OOH_demo.enums.SaasPlan;
@@ -10,9 +11,12 @@ import com.neuralFlux.Saas_OOH_demo.models.User;
 import com.neuralFlux.Saas_OOH_demo.repositories.CompanyRepository;
 import com.neuralFlux.Saas_OOH_demo.repositories.CustomerRepository;
 import com.neuralFlux.Saas_OOH_demo.repositories.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -24,22 +28,56 @@ public class UserService {
 
     private final PasswordEncoder passwordEncoder;
 
-    public User createUser(UserRequestDTO dto) {
-        Company company = companyRepository.findById(dto.companyId())
+    @Transactional
+    public User createEmployee(EmployeeRequestDTO dto, Long companyId) {
+        if(userRepository.findByEmail(dto.email()).isPresent()) {
+            throw new IllegalArgumentException("Este e-mail já está em uso.");
+        }
+
+        Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new ResourceNotFoundException("Empresa não encontrada"));
 
-        User user = new User();
-        user.setCompany(company);
-        user.setName(dto.name());
-        user.setEmail(dto.email());
-        user.setPassword(passwordEncoder.encode(dto.password()));
+        User employee = new User();
+        employee.setCompany(company);
+        employee.setName(dto.name());
+        employee.setEmail(dto.email());
+        employee.setPassword(passwordEncoder.encode(dto.password()));
+        employee.setRole(dto.role());
+        employee.setActive(true);
 
-        if(dto.customerId() != null){
-            setupCustomerUser(user, dto.customerId(), company);
-        } else {
-            user.setRole(dto.role());
+        return userRepository.save(employee);
+    }
+
+    @Transactional
+    public User createCustomerUser(UserRequestDTO dto, Long companyId) {
+        if(userRepository.findByEmail(dto.email()).isPresent()) {
+            throw new IllegalArgumentException("Este e-mail já está em uso");
         }
-        return userRepository.save(user);
+
+        Company company = companyRepository.findById(companyId)
+                .orElseThrow(() -> new ResourceNotFoundException("Empresa não encontrada"));
+
+        if (company.getSaasPlan() == SaasPlan.BASIC){
+            throw new IllegalArgumentException("Faça o upgrade para o plano PRO para liberar o Portal do Cliente");
+        }
+
+        Customer customer = customerRepository.findById(dto.customerId())
+                .orElseThrow(() -> new ResourceNotFoundException("Cliente não encontrado"));
+
+        User clientUser = new User();
+        clientUser.setCompany(company);
+        clientUser.setCustomer(customer);
+        clientUser.setName(dto.name());
+        clientUser.setEmail(dto.email());
+        clientUser.setPassword(passwordEncoder.encode(dto.password()));
+        clientUser.setRole(RoleUser.CUSTOMER);
+        clientUser.setActive(true);
+
+        return userRepository.save(clientUser);
+    }
+
+    public List<User> getEmployeesByCompany(Long companyId) {
+        return userRepository.findByCompanyIdAndRoleNot(companyId, RoleUser.CUSTOMER);
     }
 
     private void setupCustomerUser(User user, Long customerId, Company company){

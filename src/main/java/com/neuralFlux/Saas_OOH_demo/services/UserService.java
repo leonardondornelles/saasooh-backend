@@ -1,13 +1,18 @@
 package com.neuralFlux.Saas_OOH_demo.services;
 
 import com.neuralFlux.Saas_OOH_demo.dtos.EmployeeRequestDTO;
+import com.neuralFlux.Saas_OOH_demo.dtos.ExecutivePerformanceDTO;
 import com.neuralFlux.Saas_OOH_demo.dtos.UserRequestDTO;
+import com.neuralFlux.Saas_OOH_demo.dtos.campaignDTO.CampaignResponseDTO;
 import com.neuralFlux.Saas_OOH_demo.enums.RoleUser;
 import com.neuralFlux.Saas_OOH_demo.enums.SaasPlan;
+import com.neuralFlux.Saas_OOH_demo.enums.StatusCampaign;
 import com.neuralFlux.Saas_OOH_demo.exceptions.ResourceNotFoundException;
+import com.neuralFlux.Saas_OOH_demo.models.Campaign;
 import com.neuralFlux.Saas_OOH_demo.models.Company;
 import com.neuralFlux.Saas_OOH_demo.models.Customer;
 import com.neuralFlux.Saas_OOH_demo.models.User;
+import com.neuralFlux.Saas_OOH_demo.repositories.CampaignRepository;
 import com.neuralFlux.Saas_OOH_demo.repositories.CompanyRepository;
 import com.neuralFlux.Saas_OOH_demo.repositories.CustomerRepository;
 import com.neuralFlux.Saas_OOH_demo.repositories.UserRepository;
@@ -25,6 +30,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final CompanyRepository companyRepository;
     private final CustomerRepository customerRepository;
+    private final CampaignRepository campaignRepository;
 
     private final PasswordEncoder passwordEncoder;
 
@@ -80,6 +86,7 @@ public class UserService {
         return userRepository.findByCompanyIdAndRoleNot(companyId, RoleUser.CUSTOMER);
     }
 
+
     private void setupCustomerUser(User user, Long customerId, Company company){
         if (company.getSaasPlan() == SaasPlan.BASIC){
             throw new IllegalArgumentException("Faça o upgrade para o plano PRO");
@@ -90,4 +97,33 @@ public class UserService {
         user.setCustomer(customer);
         user.setRole(RoleUser.CUSTOMER);
     }
+
+    public ExecutivePerformanceDTO getExecutivePerformance(Long executiveId, Long companyId){
+        // Searches the executive
+        User executive = userRepository.findById(executiveId)
+                .orElseThrow(() -> new ResourceNotFoundException("Executivo não encontrado"));
+
+        if(!executive.getCompany().getId().equals(companyId)){
+            throw new IllegalArgumentException("Acesso negado. Este usúario não pertence a esta empresa");
+        }
+
+        List<StatusCampaign> activeStatuses = List.of(StatusCampaign.ACTIVE, StatusCampaign.RESERVED);
+
+        Double totalMrr = campaignRepository.sumMrrByExecutive(executiveId, companyId, activeStatuses);
+        Long activeCount = campaignRepository.countActiveCampaignsByExecutive(executiveId, companyId, activeStatuses);
+
+        List<Campaign> campaigns = campaignRepository.findByExecutiveIdAndCompanyIdOrderByStartDateDesc(executiveId, companyId);
+        List<CampaignResponseDTO> campaignDtos = campaigns.stream().map(CampaignResponseDTO::new).toList();
+
+        return new ExecutivePerformanceDTO(
+                executive.getId(),
+                executive.getName(),
+                executive.getEmail(),
+                executive.getRole().name(),
+                totalMrr,
+                activeCount,
+                campaignDtos
+        );
+    }
+
 }

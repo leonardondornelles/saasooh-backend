@@ -34,4 +34,29 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
             @Param("endDate") LocalDate endDate,
             @Param("statuses") List<StatusCampaign> statuses
             );
+
+    // 1. Sums de MRR from a executive (only active campaigns or reserved)
+    @Query("SELECT COALESCE(SUM(c.monthlyValue), 0.0) FROM Campaign c " +
+            "WHERE c.executive.id = :executiveId AND c.company.id = :companyId AND c.status IN :statuses")
+    Double sumMrrByExecutive(
+            @Param("executiveId") Long executiveId,
+            @Param("companyId") Long companyId,
+            @Param("statuses") List<StatusCampaign> statuses
+    );
+
+    // 2. Counts how many active or reserved campaigns the executive has
+    @Query("SELECT COUNT(c) FROM Campaign c WHERE c.executive.id = :executiveId " +
+            "AND c.company.id = :companyId AND c.status IN :statuses")
+    Long countActiveCampaignsByExecutive(
+            @Param("executiveId") Long executiveId,
+            @Param("companyId") Long companyId,
+            @Param("statuses") List<StatusCampaign> statuses
+    );
+
+    // 3. Brings the history of campaigns from the executive
+    List<Campaign> findByExecutiveIdAndCompanyIdOrderByStartDateDesc(Long executiveId, Long companyId);
+
+    // Sums globally all the mrr's
+    @Query("SELECT COALESCE(SUM(c.monthlyValue), 0.0) FROM Campaign c WHERE c.company.id = :companyId AND c.status IN :statuses")
+    Double sumMrrByCompany(@Param("companyId") Long companyId, @Param("statuses") List<StatusCampaign> statuses);
 }

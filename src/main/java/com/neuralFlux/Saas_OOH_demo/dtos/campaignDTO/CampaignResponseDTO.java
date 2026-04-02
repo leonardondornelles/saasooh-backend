@@ -12,6 +12,7 @@ public record CampaignResponseDTO(
         String panelAddress,
         LocalDate startDate,
         LocalDate endDate,
+        Double monthlyValue,
         StatusCampaign status
 ) {
     public CampaignResponseDTO(Campaign campaign) {
@@ -22,6 +23,7 @@ public record CampaignResponseDTO(
                 campaign.getFace().getPanel().getAddress(),
                 campaign.getStartDate(),
                 campaign.getEndDate(),
+                campaign.getMonthlyValue(),
                 campaign.getStatus()
         );
     }

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+
 @RestController
 @RequestMapping("/api/campaigns")
 @RequiredArgsConstructor
@@ -29,14 +30,15 @@ public class CampaignController {
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody CampaignRequestDTO dto){
+    public ResponseEntity<CampaignResponseDTO> create(@RequestBody CampaignRequestDTO dto){
+
             UserDetailsImpl userDetails = getAuthenticatedUser();
             Long executiveId= userDetails.getUser().getId();
             Long companyId = userDetails.getUser().getCompany().getId();
 
             Campaign created = campaignService.createCampaign(dto, executiveId, companyId);
 
-            return ResponseEntity.status(HttpStatus.CREATED).body(created);
+            return ResponseEntity.status(HttpStatus.CREATED).body(new CampaignResponseDTO(created));
 
         }
     }

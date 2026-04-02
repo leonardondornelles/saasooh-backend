@@ -5,5 +5,6 @@ public enum RoleUser {
     ADMIN, // Highest hiring company privileges
     COMERCIAL, // Comercial departament from the hiring company
     OPERATIONAL, // Operational departament from the hiring company
-    CUSTOMER
+    CUSTOMER,
+    FINANCIAL
 }

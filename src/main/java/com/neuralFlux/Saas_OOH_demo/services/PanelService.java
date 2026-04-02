@@ -5,6 +5,7 @@ import com.neuralFlux.Saas_OOH_demo.dtos.details.CampaignSnippetDTO;
 import com.neuralFlux.Saas_OOH_demo.dtos.details.FaceDetailDTO;
 import com.neuralFlux.Saas_OOH_demo.dtos.details.PanelDetailsDTO;
 import com.neuralFlux.Saas_OOH_demo.enums.FaceStatus;
+import com.neuralFlux.Saas_OOH_demo.enums.SaasPlan;
 import com.neuralFlux.Saas_OOH_demo.enums.StatusCampaign;
 import com.neuralFlux.Saas_OOH_demo.models.Campaign;
 import com.neuralFlux.Saas_OOH_demo.models.Company;
@@ -36,6 +37,15 @@ public class PanelService {
 
         Company company = companyRepository.findById(companyId)
                 .orElseThrow(() -> new RuntimeException("Empresa não encontrada"));
+
+        long currentPanels = panelRepository.countByCompanyId(companyId);
+
+        if(company.getSaasPlan() == SaasPlan.BASIC && currentPanels >= 50) {
+            throw new IllegalArgumentException("Limite do Plano BASIC atingido (50 painéis). Faça upgrade para o plano PRO.");
+        }
+        if(company.getSaasPlan() == SaasPlan.PRO && currentPanels >= 300) {
+            throw new IllegalArgumentException("Limite do Plano PRO atingido (300 painéis). Faça upgrade para o plano ENTERPRISE.");
+        }
 
         Panel panel = new Panel();
         panel.setCompany(company);

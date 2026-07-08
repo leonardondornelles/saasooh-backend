@@ -76,4 +76,10 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
     // Counts campaigns per status (Pipeline)
     @Query("SELECT COUNT(c) FROM Campaign c WHERE c.company.id = :companyId AND c.status = :status")
     Long countByCompanyIdAndStatus(@Param("companyId") Long companyId, @Param("status") StatusCampaign status);
+
+    // Searches campaigns filtering by a statuses list
+    List<Campaign> findAllByStatusIn(List<StatusCampaign> statuses);
+
+    // Searches all the campoaigns from a company ordering by most recent
+    List<Campaign> findByCompanyIdOrderByStartDateDesc(Long companyId);
 }

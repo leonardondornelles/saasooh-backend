@@ -37,7 +37,9 @@ public class Campaign {
     @Column(nullable = false)
     private LocalDate endDate;
 
+    @Column(name = "monthly_value")
     private Double monthlyValue;
+
     private Double totalValue;
 
     @Enumerated(EnumType.STRING)

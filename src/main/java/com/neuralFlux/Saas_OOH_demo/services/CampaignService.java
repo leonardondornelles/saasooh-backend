@@ -66,4 +66,28 @@ public class CampaignService {
 
         return campaignRepository.save(campaign);
     }
+
+    @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 0 * * *")
+    @org.springframework.transaction.annotation.Transactional
+    public void updateCampaignLifecycles() {
+        LocalDate today = LocalDate.now();
+
+        List<Campaign> toActive = campaignRepository.findAllByStatusIn(
+                List.of(StatusCampaign.APPROVED, StatusCampaign.RESERVED)
+        );
+        for(Campaign c : toActive) {
+            if(!c.getStartDate().isAfter(today)) {
+                c.setStatus(StatusCampaign.ACTIVE);
+                campaignRepository.save(c);
+            }
+        }
+
+        List<Campaign> toComplete = campaignRepository.findAllByStatusIn(List.of(StatusCampaign.ACTIVE));
+        for(Campaign c : toComplete){
+            if(c.getEndDate().isBefore(today)) {
+                c.setStatus(StatusCampaign.COMPLETED);
+                campaignRepository.save(c);
+            }
+        }
+    }
 }

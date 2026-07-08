@@ -1,5 +1,6 @@
 package com.neuralFlux.Saas_OOH_demo.repositories;
 
+import com.neuralFlux.Saas_OOH_demo.dtos.financeDTO.ExecutiveRankingDTO;
 import com.neuralFlux.Saas_OOH_demo.enums.StatusCampaign;
 import com.neuralFlux.Saas_OOH_demo.models.Campaign;
 import org.springframework.cglib.core.Local;
@@ -59,4 +60,20 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
     // Sums globally all the mrr's
     @Query("SELECT COALESCE(SUM(c.monthlyValue), 0.0) FROM Campaign c WHERE c.company.id = :companyId AND c.status IN :statuses")
     Double sumMrrByCompany(@Param("companyId") Long companyId, @Param("statuses") List<StatusCampaign> statuses);
+
+    //  Sales Ranking:
+    @Query("SELECT new com.neuralFlux.Saas_OOH_demo.dtos.financeDTO.ExecutiveRankingDTO(c.executive.name, SUM(c.monthlyValue)) " +
+            "FROM Campaign c WHERE c.company.id = :companyId AND c.status IN :statuses " +
+            "GROUP BY c.executive.name ORDER BY SUM(c.monthlyValue) DESC")
+    List<ExecutiveRankingDTO> getExecutiveRanking(@Param("companyId") Long companyId, @Param("statuses") List<StatusCampaign> statuses);
+
+    // Expiring Contracts
+    @Query("SELECT c FROM Campaign c WHERE c.company.id = :companyId AND c.status IN :statuses " +
+            "AND c.endDate BETWEEN :hoje AND :limite " +
+            "ORDER BY c.endDate ASC")
+    List<Campaign> findExpiringCampaigns(@Param("companyId") Long companyId, @Param("statuses") List<StatusCampaign> statuses, @Param("hoje") LocalDate hoje, @Param("limite") LocalDate limite);
+
+    // Counts campaigns per status (Pipeline)
+    @Query("SELECT COUNT(c) FROM Campaign c WHERE c.company.id = :companyId AND c.status = :status")
+    Long countByCompanyIdAndStatus(@Param("companyId") Long companyId, @Param("status") StatusCampaign status);
 }

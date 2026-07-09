@@ -2,6 +2,7 @@ package com.neuralFlux.Saas_OOH_demo.controllers;
 
 import com.neuralFlux.Saas_OOH_demo.dtos.campaignDTO.CampaignRequestDTO;
 import com.neuralFlux.Saas_OOH_demo.dtos.campaignDTO.CampaignResponseDTO;
+import com.neuralFlux.Saas_OOH_demo.enums.CampaignStatusUpdateDTO;
 import com.neuralFlux.Saas_OOH_demo.enums.StatusCampaign;
 import com.neuralFlux.Saas_OOH_demo.models.Campaign;
 import com.neuralFlux.Saas_OOH_demo.models.User;
@@ -58,10 +59,10 @@ public class CampaignController {
         return ResponseEntity.ok(dtos);
     }
 
-    @PatchMapping("/{id}/status")
+    @PutMapping("/{id}/status")
     public ResponseEntity<CampaignResponseDTO> updateStatus(
             @PathVariable Long id,
-            @RequestParam StatusCampaign status) {
+            @RequestBody CampaignStatusUpdateDTO dto) {
 
         UserDetailsImpl userDetails = getAuthenticatedUser();
         Long companyId = userDetails.getUser().getCompany().getId();
@@ -73,10 +74,20 @@ public class CampaignController {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
-        campaign.setStatus(status);
+        StatusCampaign newStatus = StatusCampaign.valueOf(dto.status());
+        campaign.setStatus(newStatus);
+
+        if(dto.startDate() != null) campaign.setStartDate(dto.startDate());
+        if(dto.endDate() != null) campaign.setEndDate(dto.endDate());
+
+        if(dto.observations() != null && !dto.observations().trim().isEmpty()) {
+            campaign.setObservations(dto.observations());
+        }
 
         LocalDate today = LocalDate.now();
-        if((status == StatusCampaign.APPROVED || status == StatusCampaign.RESERVED) && !campaign.getStartDate().isAfter(today)) {
+        if ((newStatus == StatusCampaign.APPROVED || newStatus == StatusCampaign.RESERVED)
+                && campaign.getStartDate() != null
+                && !campaign.getStartDate().isAfter(today)) {
             campaign.setStatus(StatusCampaign.ACTIVE);
         }
 

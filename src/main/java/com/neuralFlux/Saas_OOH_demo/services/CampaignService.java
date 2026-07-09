@@ -5,7 +5,11 @@ import com.neuralFlux.Saas_OOH_demo.enums.StatusCampaign;
 import com.neuralFlux.Saas_OOH_demo.exceptions.ResourceNotFoundException;
 import com.neuralFlux.Saas_OOH_demo.models.*;
 import com.neuralFlux.Saas_OOH_demo.repositories.*;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -22,8 +26,10 @@ public class CampaignService {
     private final CompanyRepository companyRepository;
 
     public Campaign createCampaign(CampaignRequestDTO dto, Long executiveId, Long companyId){
-        if(dto.endDate().isBefore(dto.startDate()))
-            throw new IllegalArgumentException("A data de término não pode ser anterior à data de início.");
+        if(dto.startDate() != null && dto.endDate() != null) {
+            if (dto.endDate().isBefore(dto.startDate()))
+                throw new IllegalArgumentException("A data de término não pode ser anterior à data de início.");
+        }
 
         long overlaps = campaignRepository.countOverlappingCampaigns(
                 dto.faceId(),
@@ -57,26 +63,37 @@ public class CampaignService {
         campaign.setExecutive(executive);
         campaign.setCompany(company);
 
-        LocalDate today = LocalDate.now();
-        if (dto.startDate().isAfter(today)){
-            campaign.setStatus(StatusCampaign.RESERVED);
+
+        if (dto.startDate() == null || dto.endDate() == null) {
+            campaign.setStatus(StatusCampaign.PROPOSAL);
         } else {
-            campaign.setStatus(StatusCampaign.ACTIVE);
+            LocalDate today = LocalDate.now();
+            if (dto.startDate().isAfter(today)) {
+                campaign.setStatus(StatusCampaign.RESERVED);
+            } else {
+                campaign.setStatus(StatusCampaign.ACTIVE);
+            }
         }
 
         return campaignRepository.save(campaign);
     }
 
-    @org.springframework.scheduling.annotation.Scheduled(cron = "0 0 0 * * *")
-    @org.springframework.transaction.annotation.Transactional
+    /**
+     * Runs every day in midnight and always when the Spring boot server is initialized
+     */
+    @Scheduled(cron = "0 0 0 * * *") // Midnight trigger
+    @EventListener(ApplicationReadyEvent.class) // Server initialization trrigger
+    @Transactional
     public void updateCampaignLifecycles() {
         LocalDate today = LocalDate.now();
 
+        // If the campaign start date has arrived or passed turns it into ACTIVE
         List<Campaign> toActive = campaignRepository.findAllByStatusIn(
                 List.of(StatusCampaign.APPROVED, StatusCampaign.RESERVED)
         );
         for(Campaign c : toActive) {
-            if(!c.getStartDate().isAfter(today)) {
+            // Verifies if the date exists before comparing, avoiding NullPointerException
+            if(c.getStartDate() != null && !c.getStartDate().isAfter(today)) {
                 c.setStatus(StatusCampaign.ACTIVE);
                 campaignRepository.save(c);
             }
@@ -84,7 +101,7 @@ public class CampaignService {
 
         List<Campaign> toComplete = campaignRepository.findAllByStatusIn(List.of(StatusCampaign.ACTIVE));
         for(Campaign c : toComplete){
-            if(c.getEndDate().isBefore(today)) {
+            if(c.getEndDate() != null && c.getEndDate().isBefore(today)) {
                 c.setStatus(StatusCampaign.COMPLETED);
                 campaignRepository.save(c);
             }

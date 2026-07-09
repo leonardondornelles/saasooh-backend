@@ -31,10 +31,10 @@ public class Campaign {
     @JoinColumn(name = "executive_id", nullable = false)
     private User executive;
 
-    @Column(nullable = false)
+    @Column(name = "start_date")
     private LocalDate startDate;
 
-    @Column(nullable = false)
+    @Column(name = "end_date")
     private LocalDate endDate;
 
     @Column(name = "monthly_value")

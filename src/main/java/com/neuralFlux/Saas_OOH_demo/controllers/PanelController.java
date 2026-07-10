@@ -37,7 +37,7 @@ public class PanelController {
         Long companyId = userDetails.getUser().getCompany().getId();
 
         Panel savedPanel = panelService.createPanel(companyId, dto);
-
+        System.out.println("DEBUG: O tipo de painel recebido é: " + dto.panelType());
         return ResponseEntity.status(HttpStatus.CREATED).body(new PanelResponseDTO(savedPanel));
     }
 

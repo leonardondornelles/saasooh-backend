@@ -1,4 +1,4 @@
-package com.neuralFlux.Saas_OOH_demo.enums;
+package com.neuralFlux.Saas_OOH_demo.dtos.campaignDTO;
 
 import java.time.LocalDate;
 

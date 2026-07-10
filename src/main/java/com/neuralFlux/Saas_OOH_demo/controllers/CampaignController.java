@@ -2,15 +2,13 @@ package com.neuralFlux.Saas_OOH_demo.controllers;
 
 import com.neuralFlux.Saas_OOH_demo.dtos.campaignDTO.CampaignRequestDTO;
 import com.neuralFlux.Saas_OOH_demo.dtos.campaignDTO.CampaignResponseDTO;
-import com.neuralFlux.Saas_OOH_demo.enums.CampaignStatusUpdateDTO;
+import com.neuralFlux.Saas_OOH_demo.dtos.campaignDTO.CampaignStatusUpdateDTO;
 import com.neuralFlux.Saas_OOH_demo.enums.StatusCampaign;
 import com.neuralFlux.Saas_OOH_demo.models.Campaign;
-import com.neuralFlux.Saas_OOH_demo.models.User;
 import com.neuralFlux.Saas_OOH_demo.repositories.CampaignRepository;
 import com.neuralFlux.Saas_OOH_demo.security.UserDetailsImpl;
 import com.neuralFlux.Saas_OOH_demo.services.CampaignService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cglib.core.Local;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -75,6 +73,14 @@ public class CampaignController {
         }
 
         StatusCampaign newStatus = StatusCampaign.valueOf(dto.status());
+        StatusCampaign currentStatus = campaign.getStatus();
+
+        if((currentStatus == StatusCampaign.ACTIVE
+                || currentStatus == StatusCampaign.RESERVED || currentStatus == StatusCampaign.COMPLETED)
+                && (newStatus == StatusCampaign.PROPOSAL || newStatus == StatusCampaign.NEGOTIATION)){
+            throw new IllegalArgumentException("Não é permitido retroceder uma campanha para fases de negociação");
+        }
+
         campaign.setStatus(newStatus);
 
         if(dto.startDate() != null) campaign.setStartDate(dto.startDate());

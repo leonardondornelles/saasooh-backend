@@ -10,6 +10,10 @@ import java.util.List;
 public interface PanelRepository extends JpaRepository<Panel, Long> {
 
     List<Panel> findByCity(String city);
+
     List<Panel> findByCompanyId(Long companyId);
+
     long countByCompanyId(Long companyId);
+
+    List<Panel> findByCompanyIdAndActiveTrue(Long companyId);
 }

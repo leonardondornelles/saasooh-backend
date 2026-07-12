@@ -4,11 +4,15 @@ package com.neuralFlux.Saas_OOH_demo.controllers;
 import com.neuralFlux.Saas_OOH_demo.dtos.PanelRequestDTO;
 import com.neuralFlux.Saas_OOH_demo.dtos.PanelResponseDTO;
 import com.neuralFlux.Saas_OOH_demo.dtos.details.PanelDetailsDTO;
+import com.neuralFlux.Saas_OOH_demo.enums.StatusCampaign;
 import com.neuralFlux.Saas_OOH_demo.models.Company;
 import com.neuralFlux.Saas_OOH_demo.models.Panel;
+import com.neuralFlux.Saas_OOH_demo.repositories.CampaignRepository;
+import com.neuralFlux.Saas_OOH_demo.repositories.PanelRepository;
 import com.neuralFlux.Saas_OOH_demo.security.SecurityConfig;
 import com.neuralFlux.Saas_OOH_demo.security.UserDetailsImpl;
 import com.neuralFlux.Saas_OOH_demo.services.PanelService;
+import org.springframework.transaction.annotation.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
@@ -27,6 +31,8 @@ import java.util.List;
 public class PanelController {
 
     private final PanelService panelService;
+    private final PanelRepository panelRepository;
+    private final CampaignRepository campaignRepository;
 
     @PostMapping
     public ResponseEntity<PanelResponseDTO> save(@RequestBody PanelRequestDTO dto) {
@@ -42,15 +48,16 @@ public class PanelController {
     }
 
     @GetMapping
+    @Transactional(readOnly = true)
     public ResponseEntity<List<PanelResponseDTO>> listAll(){
 
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-
         UserDetailsImpl userDetails = (UserDetailsImpl) auth.getPrincipal();
-
         Long companyId = userDetails.getUser().getCompany().getId();
 
-        List<PanelResponseDTO> dtos = panelService.getPanelByCompanyId(companyId)
+        List<Panel> panels = panelRepository.findByCompanyIdAndActiveTrue(companyId);
+
+        List<PanelResponseDTO> dtos = panels
                 .stream().map(PanelResponseDTO::new)
                 .toList();
 

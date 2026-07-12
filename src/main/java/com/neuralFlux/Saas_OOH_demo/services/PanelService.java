@@ -15,6 +15,7 @@ import com.neuralFlux.Saas_OOH_demo.repositories.CampaignRepository;
 import com.neuralFlux.Saas_OOH_demo.repositories.CompanyRepository;
 import com.neuralFlux.Saas_OOH_demo.repositories.FaceRepository;
 import com.neuralFlux.Saas_OOH_demo.repositories.PanelRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -77,15 +78,45 @@ public class PanelService {
         return panelRepository.findByCompanyId(companyId);
     }
 
+    @Transactional
     public void deletePanel(Long panelId, Long companyId) {
         Panel panel = panelRepository.findById(panelId)
-                .orElseThrow(() -> new RuntimeException("Painel não encontrado"));
+                .orElseThrow(() -> new IllegalArgumentException("Painel não encontrado"));
 
-        if(!panel.getCompany().getId().equals(companyId)){
-            throw new RuntimeException("Acesso Negado! Você não pode excluir o painel de outra empresa");
+        // Verifica a segurança
+        if(!panel.getCompany().getId().equals(companyId)) {
+            throw new IllegalArgumentException("Você não tem permissão para excluir este painel.");
         }
 
-        panelRepository.delete(panel);
+        // 1. Soft Delete: Marca o painel como inativo
+        panel.setActive(false);
+
+        // 2. Varre as Faces e Campanhas
+        if(panel.getFaces() != null) {
+            for (var face : panel.getFaces()) {
+                face.setActive(false); // Inativa a face
+
+                if(face.getCampaigns() != null) {
+                    for(var camp : face.getCampaigns()) {
+                        StatusCampaign status = camp.getStatus();
+
+                        // Se a campanha estiver em andamento ou negociação...
+                        if(status != StatusCampaign.COMPLETED &&
+                                status != StatusCampaign.LOST &&
+                                status != StatusCampaign.CANCELLED) {
+
+                            // Cancela e adiciona a justificação
+                            camp.setStatus(StatusCampaign.CANCELLED);
+                            camp.setObservations("Sistema: Painel e faces excluídos do sistema de inventário.");
+                            campaignRepository.save(camp);
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Salva a alteração do painel (as campanhas já foram salvas acima)
+        panelRepository.save(panel);
     }
 
     public PanelDetailsDTO getPanelDetails(Long panelId, Long companyId) {

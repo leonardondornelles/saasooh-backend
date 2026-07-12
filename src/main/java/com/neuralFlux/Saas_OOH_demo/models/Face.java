@@ -5,6 +5,9 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
+import java.util.Arrays;
+import java.util.List;
+
 @Entity
 @Table(name = "faces")
 @Data
@@ -25,4 +28,7 @@ public class Face {
     private String format; // Ex: "7x3,60"
     private Double tableValue;
     private Boolean active;
+
+    @OneToMany(mappedBy = "face")
+    private List<Campaign> campaigns;
 }

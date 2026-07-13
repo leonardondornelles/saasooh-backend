@@ -14,8 +14,9 @@ public class CampaignResponseDTO {
     private Long id;
     private String customerName;
     private String faceName;
+    private String panelCity;
+    private String panelType;
 
-    // 🚀 Novos campos adicionados!
     private Long panelId;
     private String panelAddress;
     private Double monthlyValue;
@@ -40,8 +41,15 @@ public class CampaignResponseDTO {
             if (campaign.getFace().getPanel() != null) {
                 this.panelId = campaign.getFace().getPanel().getId();
                 this.panelAddress = campaign.getFace().getPanel().getAddress();
+
+                this.panelCity = campaign.getFace().getPanel().getCity();
+
+                if(campaign.getFace().getPanel().getType() != null){
+                    this.panelType = campaign.getFace().getPanel().getType().name();
+                }
             }
         }
+
 
         this.startDate = campaign.getStartDate();
         this.endDate = campaign.getEndDate();

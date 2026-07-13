@@ -8,6 +8,12 @@ public record FinanceDashboardDTO(
         Double averageTicket,
         List<ExecutiveRankingDTO> ranking,
         List<ExpiringContractDTO> expiringContracts,
-        List<PipelineStageDTO> pipeline
+        List<PipelineStageDTO> pipeline,
+
+        List<OccupancyCityDTO> occupancyByCity,
+        List<RevenueEvolutionDTO> revenueEvolution,
+        List<DelinquentClientDTO> delinquencies
 ) {
 }
+
+

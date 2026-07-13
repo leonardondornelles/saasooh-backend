@@ -3,12 +3,14 @@ package com.neuralFlux.Saas_OOH_demo.controllers;
 
 import com.neuralFlux.Saas_OOH_demo.dtos.CustomerRequestDTO;
 import com.neuralFlux.Saas_OOH_demo.dtos.CustomerResponseDTO;
+import com.neuralFlux.Saas_OOH_demo.dtos.customer.CustomerProfileDTO;
 import com.neuralFlux.Saas_OOH_demo.models.Customer;
 import com.neuralFlux.Saas_OOH_demo.models.User;
 import com.neuralFlux.Saas_OOH_demo.security.UserDetailsImpl;
 import com.neuralFlux.Saas_OOH_demo.services.CustomerService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.apache.coyote.Response;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -41,5 +43,16 @@ public class CustomerController {
     public ResponseEntity<List<CustomerResponseDTO>> listAll(){
         Long companyId = getCompanyIdFromToken();
         return ResponseEntity.ok(customerService.listCustomers(companyId));
+    }
+
+    @GetMapping("/{id}/profile")
+    public ResponseEntity<CustomerProfileDTO> getProfile(@PathVariable Long id) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        UserDetailsImpl userDetails = (UserDetailsImpl) auth.getPrincipal();
+        Long companyId = userDetails.getUser().getCompany().getId();
+
+        CustomerProfileDTO profile = customerService.getCustomerProfile(id, companyId);
+
+        return ResponseEntity.ok(profile);
     }
 }

@@ -5,6 +5,8 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.util.List;
+
 @Entity
 @Table(name = "customers")
 @Data
@@ -37,6 +39,9 @@ public class Customer {
 
     @Column(columnDefinition = "TEXT")
     private String observation;
+
+    @OneToMany(mappedBy = "customer")
+    private List<Campaign> campaigns;
 
     private Boolean active = true;
 }

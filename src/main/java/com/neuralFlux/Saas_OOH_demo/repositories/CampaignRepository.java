@@ -82,4 +82,6 @@ public interface CampaignRepository extends JpaRepository<Campaign, Long> {
 
     // Searches all the campoaigns from a company ordering by most recent
     List<Campaign> findByCompanyIdOrderByStartDateDesc(Long companyId);
+
+    long countByCompanyIdAndStatusIn(Long companyId, List<StatusCampaign> activeStatuses);
 }

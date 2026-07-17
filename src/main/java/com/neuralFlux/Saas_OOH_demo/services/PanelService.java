@@ -15,7 +15,7 @@ import com.neuralFlux.Saas_OOH_demo.repositories.CampaignRepository;
 import com.neuralFlux.Saas_OOH_demo.repositories.CompanyRepository;
 import com.neuralFlux.Saas_OOH_demo.repositories.FaceRepository;
 import com.neuralFlux.Saas_OOH_demo.repositories.PanelRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

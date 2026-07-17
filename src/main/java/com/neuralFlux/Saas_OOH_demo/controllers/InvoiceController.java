@@ -1,11 +1,16 @@
 package com.neuralFlux.Saas_OOH_demo.controllers;
 
+import com.neuralFlux.Saas_OOH_demo.dtos.financeDTO.InvoiceResponseDTO;
+import com.neuralFlux.Saas_OOH_demo.security.UserDetailsImpl;
 import com.neuralFlux.Saas_OOH_demo.services.InvoiceService;
 import lombok.RequiredArgsConstructor;
 import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -14,6 +19,24 @@ import java.util.Map;
 public class InvoiceController {
 
     private final InvoiceService invoiceService;
+
+    // Auxiliary function to get the logged
+    private UserDetailsImpl getAuthenticatedUser(){
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        return (UserDetailsImpl) auth.getPrincipal();
+    }
+
+    /**
+     * Route to list all the invoices (to receive)
+     */
+    @GetMapping
+    public ResponseEntity<List<InvoiceResponseDTO>> getAllInvoices() {
+        Long companyId = getAuthenticatedUser().getUser().getCompany().getId();
+
+        List<InvoiceResponseDTO> invoices = invoiceService.getAllCompanyInvoices(companyId);
+
+        return ResponseEntity.ok(invoices);
+    }
 
     @PutMapping("/{id}/pay")
     public ResponseEntity<Void> registerPayment(

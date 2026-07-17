@@ -18,4 +18,6 @@ public interface InvoiceRepository extends JpaRepository<Invoice, Long> {
      */
     @Query("SELECT SUM(i.amount) FROM Invoice i WHERE i.company.id = :companyId AND i.status = 'PENDING' AND i.dueDate < :today")
     Double sumOverdueAmount(@Param("companyId") Long companyId, @Param("today") LocalDate today);
+
+    List<Invoice> findByCompanyIdOrderByDueDateDesc(Long companyId);
 }

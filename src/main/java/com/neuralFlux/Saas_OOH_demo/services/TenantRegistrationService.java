@@ -6,7 +6,7 @@ import com.neuralFlux.Saas_OOH_demo.models.Company;
 import com.neuralFlux.Saas_OOH_demo.models.User;
 import com.neuralFlux.Saas_OOH_demo.repositories.CompanyRepository;
 import com.neuralFlux.Saas_OOH_demo.repositories.UserRepository;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

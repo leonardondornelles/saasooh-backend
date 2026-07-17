@@ -25,7 +25,7 @@ import java.util.List;
 public class CampaignController {
 
     private final CampaignService campaignService;
-    private final CampaignRepository campaignRepository;
+
 
     private UserDetailsImpl getAuthenticatedUser() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
@@ -50,9 +50,7 @@ public class CampaignController {
         UserDetailsImpl userDetails = getAuthenticatedUser();
         Long companyId = userDetails.getUser().getCompany().getId();
 
-        List<Campaign> campaigns = campaignRepository.findByCompanyIdOrderByStartDateDesc(companyId);
-
-        List<CampaignResponseDTO> dtos = campaigns.stream().map(CampaignResponseDTO::new).toList();
+        List<CampaignResponseDTO> dtos = campaignService.getAllCompanyCampaigns(companyId);
 
         return ResponseEntity.ok(dtos);
     }
@@ -65,39 +63,7 @@ public class CampaignController {
         UserDetailsImpl userDetails = getAuthenticatedUser();
         Long companyId = userDetails.getUser().getCompany().getId();
 
-        Campaign campaign = campaignRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Campanha não encontrada"));
-
-        if(!campaign.getCompany().getId().equals(companyId)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        StatusCampaign newStatus = StatusCampaign.valueOf(dto.status());
-        StatusCampaign currentStatus = campaign.getStatus();
-
-        if((currentStatus == StatusCampaign.ACTIVE
-                || currentStatus == StatusCampaign.RESERVED || currentStatus == StatusCampaign.COMPLETED)
-                && (newStatus == StatusCampaign.PROPOSAL || newStatus == StatusCampaign.NEGOTIATION)){
-            throw new IllegalArgumentException("Não é permitido retroceder uma campanha para fases de negociação");
-        }
-
-        campaign.setStatus(newStatus);
-
-        if(dto.startDate() != null) campaign.setStartDate(dto.startDate());
-        if(dto.endDate() != null) campaign.setEndDate(dto.endDate());
-
-        if(dto.observations() != null && !dto.observations().trim().isEmpty()) {
-            campaign.setObservations(dto.observations());
-        }
-
-        LocalDate today = LocalDate.now();
-        if ((newStatus == StatusCampaign.APPROVED || newStatus == StatusCampaign.RESERVED)
-                && campaign.getStartDate() != null
-                && !campaign.getStartDate().isAfter(today)) {
-            campaign.setStatus(StatusCampaign.ACTIVE);
-        }
-
-        Campaign updated = campaignRepository.save(campaign);
+        Campaign updated = campaignService.updateCampaignStatus(id, companyId, dto);
         return ResponseEntity.ok(new CampaignResponseDTO(updated));
     }
 

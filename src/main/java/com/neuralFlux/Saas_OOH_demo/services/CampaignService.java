@@ -24,6 +24,7 @@ public class CampaignService {
     private final FaceRepository faceRepository;
     private final UserRepository userRepository;
     private final CompanyRepository companyRepository;
+    private final InvoiceService invoiceService;
 
     public Campaign createCampaign(CampaignRequestDTO dto, Long executiveId, Long companyId){
         if(dto.startDate() != null && dto.endDate() != null) {

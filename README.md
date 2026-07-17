@@ -22,7 +22,7 @@ Da cotação de painel à análise de MRR: o backend que sustenta o ciclo comerc
 
 **Setdoor** (nome interno do código: `NeuralFlux` / `SaasOOH`) é uma plataforma SaaS B2B para empresas de **mídia Out-of-Home** (outdoors, front lights, triedros, LEDs, painéis de rodovia) gerenciarem seu inventário de painéis, campanhas de clientes e performance comercial em um único lugar.
 
-O projeto nasceu de um problema real: a empresa de mídia exterior do meu pai controla painéis, faces e contratos em planilhas. Construí o Setdoor para resolver isso de verdade — com multi-tenancy para atender várias empresas do setor, controle de ocupação por face de painel, funil comercial e um dashboard financeiro com MRR, ranking de executivos e ocupação por praça.
+O projeto nasceu de um problema real: empresas de mídia externa controlam painéis, faces e contratos em planilhas. Construí o Setdoor para resolver isso de verdade, com multi-tenancy para atender várias empresas do setor, controle de ocupação por face de painel, funil comercial e um dashboard financeiro com MRR, ranking de executivos e ocupação por praça.
 
 Este repositório contém a **API REST**, construída em Java + Spring Boot. O frontend (Next.js/React) consome esta API e está em um [repositório separado](https://github.com/leonardondornelles/saasooh-frontend).
 

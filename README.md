@@ -2,9 +2,9 @@
 
 # Setdoor — SaasOOH Backend
 
-**API REST multi-tenant para gestão de inventário publicitário Out-of-Home (OOH)**
+**Multi-tenant REST API for Out-of-Home (OOH) advertising inventory management**
 
-Da cotação de painel à análise de MRR: o backend que sustenta o ciclo comercial completo de uma empresa de mídia exterior.
+From panel quoting to MRR analytics: the backend that powers the full commercial cycle of an out-of-home media company.
 
 [![Java](https://img.shields.io/badge/Java-21-ED8B00?logo=openjdk&logoColor=white)](https://www.oracle.com/java/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.4.3-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
@@ -12,37 +12,37 @@ Da cotação de painel à análise de MRR: o backend que sustenta o ciclo comerc
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![Maven](https://img.shields.io/badge/Maven-3.9+-C71A36?logo=apachemaven&logoColor=white)](https://maven.apache.org/)
 
-[Frontend (Next.js)](https://github.com/leonardondornelles/saasooh-frontend) · [Funcionalidades](#funcionalidades) · [Endpoints](#endpoints-da-api) · [Como rodar](#como-rodar-localmente)
+[Frontend (Next.js)](https://github.com/leonardondornelles/saasooh-frontend) · [Features](#features) · [Endpoints](#api-endpoints) · [Getting started](#getting-started-locally)
 
 </div>
 
 ---
 
-## Sobre o projeto
+## About the project
 
-**Setdoor** (nome interno do código: `NeuralFlux` / `SaasOOH`) é uma plataforma SaaS B2B para empresas de mídia Out-of-Home (outdoors, front lights, triedros, LEDs, painéis de rodovia) gerenciarem seu inventário de painéis, campanhas de clientes e performance comercial em um único lugar.
+**Setdoor** (internal codename: `NeuralFlux` / `SaasOOH`) is a B2B SaaS platform for Out-of-Home media companies (billboards, front lights, tri-vision structures, LED panels, highway panels) to manage their panel inventory, customer campaigns, and commercial performance in a single place.
 
-O projeto nasceu de um problema real: empresas de mídia externa controlam painéis, faces e contratos em planilhas. O Setdoor foi construído para resolver isso de forma consistente, com multi-tenancy para atender várias empresas do setor, controle de ocupação por face de painel, funil comercial e um dashboard financeiro com MRR, ranking de executivos e ocupação por praça.
+The project was born from a real problem: out-of-home media companies manage panels, faces, and contracts through spreadsheets. Setdoor was built to solve this properly, with multi-tenancy to serve multiple companies in the sector, occupancy control per panel face, a commercial pipeline, and a financial dashboard with MRR, executive rankings, and occupancy by city.
 
-Este repositório contém a API REST, construída em Java + Spring Boot. O frontend (Next.js/React) consome esta API e está em um [repositório separado](https://github.com/leonardondornelles/saasooh-frontend).
+This repository contains the REST API, built with Java and Spring Boot. The frontend (Next.js/React) consumes this API and lives in a [separate repository](https://github.com/leonardondornelles/saasooh-frontend).
 
 ---
 
-## Arquitetura
+## Architecture
 
-Arquitetura em camadas clássica do Spring Boot, com autenticação stateless via JWT e isolamento de dados por tenant (empresa) em todas as consultas.
+Classic layered Spring Boot architecture, with stateless JWT authentication and tenant (company) data isolation enforced across all queries.
 
 ```mermaid
 flowchart LR
-    subgraph Client["Cliente (Next.js)"]
-        FE[Frontend React]
+    subgraph Client["Client (Next.js)"]
+        FE[React Frontend]
     end
 
-    subgraph API["API Spring Boot"]
+    subgraph API["Spring Boot API"]
         direction TB
-        JWT[JwtFilter<br/>valida token a cada request]
+        JWT[JwtFilter<br/>validates token on every request]
         CTRL[Controllers<br/>REST endpoints]
-        SVC[Services<br/>regras de negócio]
+        SVC[Services<br/>business rules]
         REPO[Repositories<br/>Spring Data JPA]
     end
 
@@ -55,29 +55,29 @@ flowchart LR
     REPO --> DB
 ```
 
-**Decisões de design:**
-- **Stateless JWT** — sem sessão em memória; o token carrega `companyId`, `role` e (quando aplicável) `customerId` como claims, evitando idas extras ao banco só para checar contexto do tenant.
-- **Multi-tenancy por `companyId`** — cada `Service`/`Repository` filtra explicitamente por `companyId`, garantindo isolamento de dados entre empresas clientes do SaaS.
-- **DTOs em todas as bordas** — nenhuma entidade JPA é exposta diretamente na API, evitando vazamento de dados e problemas de serialização em relacionamentos bidirecionais.
-- **Rotina agendada (`@Scheduled`)** — o ciclo de vida das campanhas (reservado → ativo → finalizado) é atualizado automaticamente à meia-noite e também na subida do servidor.
+**Design decisions:**
+- **Stateless JWT** — no in-memory session; the token carries `companyId`, `role`, and (when applicable) `customerId` as claims, avoiding extra database round-trips just to resolve tenant context.
+- **Multi-tenancy by `companyId`** — every `Service`/`Repository` filters explicitly by `companyId`, ensuring data isolation between SaaS customer companies.
+- **DTOs at every boundary** — no JPA entity is exposed directly through the API, preventing data leakage and serialization issues in bidirectional relationships.
+- **Scheduled job (`@Scheduled`)** — the campaign lifecycle (reserved → active → completed) is updated automatically at midnight and also on server startup.
 
 ---
 
-## Modelo de dados
+## Data model
 
 ```mermaid
 erDiagram
-    COMPANY ||--o{ USER : emprega
-    COMPANY ||--o{ PANEL : possui
-    COMPANY ||--o{ CUSTOMER : atende
-    COMPANY ||--o{ CAMPAIGN : fatura
+    COMPANY ||--o{ USER : employs
+    COMPANY ||--o{ PANEL : owns
+    COMPANY ||--o{ CUSTOMER : serves
+    COMPANY ||--o{ CAMPAIGN : bills
 
-    PANEL ||--o{ FACE : "tem (1 a 5, conforme tipo)"
-    FACE ||--o{ CAMPAIGN : veicula
+    PANEL ||--o{ FACE : "has (1 to 5, depending on type)"
+    FACE ||--o{ CAMPAIGN : displays
 
-    CUSTOMER ||--o{ CAMPAIGN : contrata
-    USER ||--o{ CAMPAIGN : "fecha (executivo)"
-    CUSTOMER ||--o{ USER : "acessa via portal (opcional)"
+    CUSTOMER ||--o{ CAMPAIGN : contracts
+    USER ||--o{ CAMPAIGN : "closes (sales rep)"
+    CUSTOMER ||--o{ USER : "accesses via portal (optional)"
 
     COMPANY {
         Long id
@@ -127,20 +127,20 @@ erDiagram
 
 ---
 
-## Funcionalidades
+## Features
 
-### Autenticação e multi-tenancy
-- Registro de um novo tenant (empresa + usuário administrador) em uma única transação
-- Login com geração de JWT (24h de validade) contendo `companyId`, `role` e `customerId` como claims
-- Filtro JWT (`OncePerRequestFilter`) aplicado a todas as rotas protegidas
-- Controle de acesso por papel (`RoleUser`): `SUPER_ADMIN`, `ADMIN`, `COMERCIAL`, `OPERATIONAL`, `FINANCIAL`, `CUSTOMER`
-- Senhas com hash BCrypt
+### Authentication and multi-tenancy
+- New tenant registration (company + admin user) in a single transaction
+- Login with JWT generation (24h validity) carrying `companyId`, `role`, and `customerId` as claims
+- JWT filter (`OncePerRequestFilter`) applied to all protected routes
+- Role-based access control (`RoleUser`): `SUPER_ADMIN`, `ADMIN`, `COMERCIAL`, `OPERATIONAL`, `FINANCIAL`, `CUSTOMER`
+- Passwords hashed with BCrypt
 
-### Gestão de painéis e faces
-- Cadastro de painéis com geolocalização (lat/long), cidade, tipo e iluminação
-- Ao criar um painel, as faces são geradas automaticamente de acordo com o tipo:
+### Panel and face management
+- Panel registration with geolocation (lat/long), city, type, and illumination
+- When a panel is created, its faces are generated automatically based on type:
 
-| Tipo | Faces geradas |
+| Type | Faces generated |
 |---|:---:|
 | OUTDOOR | 2 |
 | FRONT_LIGHT | 2 |
@@ -149,68 +149,68 @@ erDiagram
 | EMPENA | 1 |
 | RODOVIARIO | 2 |
 
-- Exclusão em soft delete: ao remover um painel, todas as suas faces e campanhas em andamento são inativadas/canceladas em cascata, preservando o histórico
-- Tela de detalhes por painel com status de ocupação por face (`LIVRE`, `RESERVADO`, `OCUPADO`), calculado dinamicamente a partir das campanhas vigentes
+- Soft delete: removing a panel cascades to inactivate its faces and cancel any in-progress campaigns, preserving historical data
+- Panel detail view showing per-face occupancy status (`FREE`, `RESERVED`, `OCCUPIED`), calculated dynamically from active campaigns
 
-### Campanhas e funil comercial
-- Vínculo entre cliente, face, executivo responsável e empresa
-- Prevenção de overbooking: uma nova campanha só é criada se não houver sobreposição de datas com outra campanha `ACTIVE`/`RESERVED` na mesma face
-- Máquina de estados com 8 status: `PROPOSAL → NEGOTIATION → APPROVED → RESERVED → ACTIVE → COMPLETED` (+ `LOST` e `CANCELLED`)
-- Guarda de regra de negócio: impede retroceder uma campanha já `ACTIVE`/`RESERVED`/`COMPLETED` de volta para fases de negociação
-- Job agendado (`@Scheduled`, executado à meia-noite e no boot da aplicação) que promove campanhas automaticamente: `RESERVED/APPROVED → ACTIVE` quando a data de início chega, e `ACTIVE → COMPLETED` quando a data de término passa
+### Campaigns and sales pipeline
+- Links between customer, face, responsible sales rep, and company
+- Overbooking prevention: a new campaign can only be created if there is no date overlap with another `ACTIVE`/`RESERVED` campaign on the same face
+- 8-status state machine: `PROPOSAL → NEGOTIATION → APPROVED → RESERVED → ACTIVE → COMPLETED` (plus `LOST` and `CANCELLED`)
+- Business rule guard: prevents a campaign already `ACTIVE`/`RESERVED`/`COMPLETED` from being moved back to negotiation stages
+- Scheduled job (`@Scheduled`, run at midnight and on application boot) that automatically advances campaigns: `RESERVED/APPROVED → ACTIVE` once the start date arrives, and `ACTIVE → COMPLETED` once the end date has passed
 
-### Dashboard financeiro e analytics
-Endpoint dedicado (`/api/finance/dashboard`) que agrega, em uma única chamada:
-- MRR (receita recorrente mensal) e ARR (projeção anual) calculados a partir das campanhas ativas
-- Ticket médio por campanha ativa
-- Ranking de executivos por volume de vendas (query JPQL com `GROUP BY`)
-- Contratos a vencer nos próximos 30 dias, com nível de urgência (`urgent` / `soon` / `ok`) calculado por dias restantes
-- Funil de pipeline (propostas → negociação → aprovados) com contagem por estágio
-- Ocupação por praça/cidade, calculada como percentual de faces ocupadas sobre o total de faces ativas
-- Série de evolução de faturamento para o gráfico de tendência
+### Financial dashboard and analytics
+Dedicated endpoint (`/api/finance/dashboard`) that aggregates, in a single call:
+- MRR (monthly recurring revenue) and ARR (annual projection) calculated from active campaigns
+- Average ticket per active campaign
+- Sales rep ranking by revenue volume (JPQL query with `GROUP BY`)
+- Contracts expiring in the next 30 days, with urgency level (`urgent` / `soon` / `ok`) based on days remaining
+- Sales pipeline funnel (proposals → negotiation → approved) with counts per stage
+- Occupancy by city, calculated as the percentage of occupied faces out of total active faces
+- Revenue evolution series for trend charting
 
-### Clientes e equipe
-- CRUD de clientes (anunciantes) com validação de CNPJ único por empresa
-- Perfil de cliente com receita total, ticket médio, total de campanhas e campanhas ativas, calculado sob demanda
-- Cadastro de colaboradores (equipe interna) e de usuários do portal do cliente (disponível a partir do plano PRO)
-- Relatório de performance individual por executivo: MRR gerado, campanhas ativas e histórico completo
+### Customers and team
+- Customer (advertiser) CRUD with unique CNPJ validation per company
+- Customer profile with total revenue, average ticket, total campaigns, and active campaigns, computed on demand
+- Internal team member registration and customer portal user registration (available from the PRO plan onward)
+- Individual sales rep performance report: MRR generated, active campaigns, and full history
 
-### Planos SaaS
-Cada empresa opera sob um plano que limita funcionalidades — os limites são validados no backend, não só na UI:
+### SaaS plans
+Each company operates under a plan that limits functionality — limits are validated in the backend, not just the UI:
 
-| Plano | Limite de painéis | Alertas | Portal do cliente | Propostas em PDF |
+| Plan | Panel limit | Alerts | Customer portal | PDF proposals |
 |---|:---:|:---:|:---:|:---:|
-| BASIC | Até 50 | Não | Não | Não |
-| PRO | Até 300 | Sim | Sim | Sim |
-| ENTERPRISE | Ilimitado | Sim | Sim (white-label) | Sim |
+| BASIC | Up to 50 | No | No | No |
+| PRO | Up to 300 | Yes | Yes | Yes |
+| ENTERPRISE | Unlimited | Yes | Yes (white-label) | Yes |
 
 ---
 
-## Stack tecnológica
+## Tech stack
 
-| Camada | Tecnologia |
+| Layer | Technology |
 |---|---|
-| Linguagem | Java 21 |
+| Language | Java 21 |
 | Framework | Spring Boot 3.4.3 |
-| Segurança | Spring Security + JWT (`jjwt` 0.11.5) + BCrypt |
-| Persistência | Spring Data JPA / Hibernate |
-| Banco de dados | PostgreSQL |
-| Validação | Bean Validation (`jakarta.validation`) |
+| Security | Spring Security + JWT (`jjwt` 0.11.5) + BCrypt |
+| Persistence | Spring Data JPA / Hibernate |
+| Database | PostgreSQL |
+| Validation | Bean Validation (`jakarta.validation`) |
 | Boilerplate | Lombok |
 | Build | Maven |
-| Testes | JUnit 5 + Spring Boot Test + Spring Security Test |
+| Testing | JUnit 5 + Spring Boot Test + Spring Security Test |
 
 ---
 
-## Estrutura do projeto
+## Project structure
 
 ```
 src/main/java/com/neuralFlux/Saas_OOH_demo/
-├── controllers/     # Endpoints REST (Auth, Panel, Face, Campaign, Customer, User, Company, Finance)
-├── services/        # Regras de negócio, validações e agregações
-├── repositories/     # Interfaces Spring Data JPA + queries JPQL customizadas
-├── models/           # Entidades JPA (Company, User, Panel, Face, Customer, Campaign)
-├── dtos/              # Objetos de transferência de dados (por módulo: campaignDTO, financeDTO, loginDTO...)
+├── controllers/     # REST endpoints (Auth, Panel, Face, Campaign, Customer, User, Company, Finance)
+├── services/        # Business rules, validations, and aggregations
+├── repositories/     # Spring Data JPA interfaces + custom JPQL queries
+├── models/           # JPA entities (Company, User, Panel, Face, Customer, Campaign)
+├── dtos/              # Data transfer objects (by module: campaignDTO, financeDTO, loginDTO...)
 ├── enums/            # PanelType, FaceStatus, RoleUser, SaasPlan, StatusCampaign
 ├── security/         # JwtFilter, SecurityConfig, UserDetailsImpl, CustomUserDetailsService
 └── exceptions/       # GlobalExceptionHandler (@RestControllerAdvice), ResourceNotFoundException
@@ -218,92 +218,92 @@ src/main/java/com/neuralFlux/Saas_OOH_demo/
 
 ---
 
-## Endpoints da API
+## API endpoints
 
-Todas as rotas, exceto as marcadas como públicas, exigem o header:
+All routes, except those marked as public, require the header:
 ```
 Authorization: Bearer <token>
 ```
 
-#### Autenticação
-| Método | Rota | Descrição | Acesso |
+#### Authentication
+| Method | Route | Description | Access |
 |---|---|---|---|
-| POST | `/api/auth/register` | Cria um novo tenant (empresa + admin) | Público |
-| POST | `/api/auth/login` | Autentica e retorna o JWT | Público |
+| POST | `/api/auth/register` | Creates a new tenant (company + admin) | Public |
+| POST | `/api/auth/login` | Authenticates and returns the JWT | Public |
 
-#### Empresas e usuários
-| Método | Rota | Descrição |
+#### Companies and users
+| Method | Route | Description |
 |---|---|---|
-| GET | `/api/users/me` | Dados do usuário autenticado |
-| GET | `/api/users/company/metrics` | MRR total, painéis usados vs. limite do plano |
-| POST | `/api/users/employee` | Cadastra um colaborador interno |
-| GET | `/api/users/company` | Lista colaboradores da empresa |
-| POST | `/api/users/customer` | Cria acesso ao portal para um cliente (planos PRO+) |
-| GET | `/api/users/{id}/performance` | Performance comercial de um executivo |
-| POST | `/api/companies` | Cria uma empresa |
-| GET | `/api/companies` | Lista empresas cadastradas |
+| GET | `/api/users/me` | Authenticated user's data |
+| GET | `/api/users/company/metrics` | Total MRR, panels used vs. plan limit |
+| POST | `/api/users/employee` | Registers an internal team member |
+| GET | `/api/users/company` | Lists company employees |
+| POST | `/api/users/customer` | Creates portal access for a customer (PRO+ plans) |
+| GET | `/api/users/{id}/performance` | Commercial performance of a sales rep |
+| POST | `/api/companies` | Creates a company |
+| GET | `/api/companies` | Lists registered companies |
 
-#### Painéis e faces
-| Método | Rota | Descrição |
+#### Panels and faces
+| Method | Route | Description |
 |---|---|---|
-| POST | `/api/panels` | Cria um painel (faces geradas automaticamente) |
-| GET | `/api/panels` | Lista painéis ativos da empresa |
-| GET | `/api/panels/{id}` | Detalhes do painel com status de cada face |
-| DELETE | `/api/panels/{id}` | Remove o painel (soft delete em cascata) |
-| POST | `/api/panels/{panelId}/faces` | Adiciona uma face a um painel |
-| GET | `/api/panels/{panelId}/faces` | Lista as faces de um painel |
+| POST | `/api/panels` | Creates a panel (faces generated automatically) |
+| GET | `/api/panels` | Lists the company's active panels |
+| GET | `/api/panels/{id}` | Panel details with status of each face |
+| DELETE | `/api/panels/{id}` | Removes the panel (cascading soft delete) |
+| POST | `/api/panels/{panelId}/faces` | Adds a face to a panel |
+| GET | `/api/panels/{panelId}/faces` | Lists a panel's faces |
 
-#### Campanhas
-| Método | Rota | Descrição |
+#### Campaigns
+| Method | Route | Description |
 |---|---|---|
-| POST | `/api/campaigns` | Cria uma campanha (com checagem de overbooking) |
-| GET | `/api/campaigns` | Lista campanhas da empresa, mais recentes primeiro |
-| PUT | `/api/campaigns/{id}/status` | Atualiza status/datas/observações de uma campanha |
+| POST | `/api/campaigns` | Creates a campaign (with overbooking check) |
+| GET | `/api/campaigns` | Lists the company's campaigns, most recent first |
+| PUT | `/api/campaigns/{id}/status` | Updates status/dates/notes of a campaign |
 
-#### Clientes
-| Método | Rota | Descrição |
+#### Customers
+| Method | Route | Description |
 |---|---|---|
-| POST | `/api/customers` | Cadastra um cliente/anunciante |
-| GET | `/api/customers` | Lista clientes ativos |
-| GET | `/api/customers/{id}/profile` | Perfil consolidado (receita, ticket médio, histórico) |
+| POST | `/api/customers` | Registers a customer/advertiser |
+| GET | `/api/customers` | Lists active customers |
+| GET | `/api/customers/{id}/profile` | Consolidated profile (revenue, average ticket, history) |
 
-#### Financeiro
-| Método | Rota | Descrição |
+#### Finance
+| Method | Route | Description |
 |---|---|---|
-| GET | `/api/finance/dashboard` | Dashboard completo: MRR, ARR, ranking, pipeline, ocupação, vencimentos |
+| GET | `/api/finance/dashboard` | Full dashboard: MRR, ARR, ranking, pipeline, occupancy, upcoming expirations |
 
 ---
 
-## Segurança
+## Security
 
-- Stateless JWT: `SessionCreationPolicy.STATELESS`, sem estado de sessão no servidor
-- Claims do token: `sub` (email), `companyId`, `role` e `customerId` (quando aplicável)
-- Autorização por papel via `ROLE_<RoleUser>` (`SUPER_ADMIN`, `ADMIN`, `COMERCIAL`, `OPERATIONAL`, `FINANCIAL`, `CUSTOMER`)
-- Isolamento de tenant reforçado em nível de serviço: toda consulta/gravação sensível valida `companyId` do usuário autenticado contra o recurso acessado
-- Senhas com `BCryptPasswordEncoder`
-- CORS configurado explicitamente para o domínio do frontend
-- Tratamento de erros centralizado via `@RestControllerAdvice`, retornando payloads JSON padronizados (timestamp, status, error, message)
+- Stateless JWT: `SessionCreationPolicy.STATELESS`, no server-side session state
+- Token claims: `sub` (email), `companyId`, `role`, and `customerId` (when applicable)
+- Role-based authorization via `ROLE_<RoleUser>` (`SUPER_ADMIN`, `ADMIN`, `COMERCIAL`, `OPERATIONAL`, `FINANCIAL`, `CUSTOMER`)
+- Tenant isolation enforced at the service layer: every sensitive read/write validates the authenticated user's `companyId` against the accessed resource
+- Passwords hashed with `BCryptPasswordEncoder`
+- CORS configured explicitly for the frontend domain
+- Centralized error handling via `@RestControllerAdvice`, returning standardized JSON payloads (timestamp, status, error, message)
 
-> O `application.properties` deste repositório é um arquivo de configuração local de desenvolvimento. Em produção, credenciais e segredo do JWT devem vir de variáveis de ambiente — nunca comitados no código.
+> The `application.properties` file in this repository is a local development configuration file. In production, credentials and the JWT secret must come from environment variables — never committed to source control.
 
 ---
 
-## Como rodar localmente
+## Getting started locally
 
-### Pré-requisitos
+### Prerequisites
 - Java 21+
 - Maven 3.9+
-- PostgreSQL rodando localmente
+- PostgreSQL running locally
 
-### 1. Clone o repositório
+### 1. Clone the repository
 ```bash
 git clone https://github.com/leonardondornelles/saasooh-backend.git
 cd saasooh-backend
 ```
 
-### 2. Configure o banco de dados
+### 2. Configure the database
 
-Crie um banco no PostgreSQL e configure as credenciais via variáveis de ambiente (recomendado) ou diretamente em `src/main/resources/application.properties`:
+Create a PostgreSQL database and set up credentials via environment variables (recommended) or directly in `src/main/resources/application.properties`:
 
 ```properties
 spring.datasource.url=jdbc:postgresql://localhost:5432/saasooh
@@ -314,30 +314,30 @@ spring.jpa.hibernate.ddl-auto=update
 jwt.secret=${JWT_SECRET}
 ```
 
-### 3. Execute
+### 3. Run
 
 ```bash
 ./mvnw spring-boot:run
 ```
 
-A API estará disponível em `http://localhost:8080`.
+The API will be available at `http://localhost:8080`.
 
 ---
 
 ## Roadmap
 
-- [ ] Cobertura de testes unitários e de integração para services e controllers
-- [ ] Refresh tokens e expiração configurável do JWT
-- [ ] Geração de propostas comerciais em PDF (plano PRO/ENTERPRISE)
-- [ ] Módulo de faturamento/inadimplência (o DTO `DelinquentClientDTO` já existe, aguardando implementação)
-- [ ] Documentação interativa com OpenAPI/Swagger
-- [ ] Rate limiting nas rotas públicas de autenticação
+- [ ] Unit and integration test coverage for services and controllers
+- [ ] Refresh tokens and configurable JWT expiration
+- [ ] PDF generation for commercial proposals (PRO/ENTERPRISE plan)
+- [ ] Billing/delinquency module (the `DelinquentClientDTO` already exists, pending implementation)
+- [ ] Interactive documentation with OpenAPI/Swagger
+- [ ] Rate limiting on public authentication routes
 
 ---
 
-## Autor
+## Author
 
 **Leonardo Noronha Dornelles**
-Estudante de Ciência da Computação (PUCRS) · Bolsista de Iniciação Científica no laboratório DaVInt (pesquisa em detecção de bots com IA)
+Computer Science student (PUCRS) · Undergraduate Research Fellow at the DaVInt Lab (AI-driven bot detection research)
 
 [GitHub](https://github.com/leonardondornelles)
